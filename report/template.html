@@ -1,0 +1,344 @@
+<title>自律実行の報告書</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+JP:wght@400;500;600&family=Zen+Kaku+Gothic+New:wght@700&display=swap">
+<style>
+:root {
+  --ground: #f5f7fa;
+  --surface: #ffffff;
+  --ink: #1b2230;
+  --ink-soft: #4a5568;
+  --ink-faint: #7b8597;
+  --line: #dde2ea;
+  --accent: #2d6a8a;
+  --accent-soft: #e3eef4;
+  --buffer: #b8860b;
+  --buffer-soft: #f6ecd3;
+  --over: #b0432c;
+  --over-soft: #f7e3de;
+  --ok: #2f7d55;
+  --ok-soft: #e1f1e8;
+  --track: #e8ecf2;
+  --user: #8b7fae;
+  --font-display: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --font-body: "IBM Plex Sans JP", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, "Consolas", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #12161e; --surface: #1a202b; --ink: #e6eaf1; --ink-soft: #b3bccb; --ink-faint: #8591a5;
+    --line: #2c3442; --accent: #6fb0cf; --accent-soft: #1d3140; --buffer: #d9a93a; --buffer-soft: #3a3120;
+    --over: #e07a62; --over-soft: #3d2520; --ok: #6cc095; --ok-soft: #1c3328; --track: #262e3b; --user: #a898d4;
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #12161e; --surface: #1a202b; --ink: #e6eaf1; --ink-soft: #b3bccb; --ink-faint: #8591a5;
+  --line: #2c3442; --accent: #6fb0cf; --accent-soft: #1d3140; --buffer: #d9a93a; --buffer-soft: #3a3120;
+  --over: #e07a62; --over-soft: #3d2520; --ok: #6cc095; --ok-soft: #1c3328; --track: #262e3b; --user: #a898d4;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.7; }
+.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.shell { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 100vh; }
+nav.versions { border-right: 1px solid var(--line); padding: 24px 14px; position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto; }
+nav.versions h2 { font-size: 11px; letter-spacing: .08em; color: var(--ink-faint); font-weight: 500; margin: 0 8px 10px; }
+nav.versions ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+nav.versions button { width: 100%; text-align: left; background: none; border: 0; border-radius: 6px; padding: 8px 10px; color: var(--ink-soft); font: inherit; cursor: pointer; display: grid; gap: 1px; }
+nav.versions button:hover { background: var(--track); color: var(--ink); }
+nav.versions button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+nav.versions button[aria-current="true"] { background: var(--accent-soft); color: var(--ink); }
+nav.versions .v-date { font-size: 12px; color: var(--ink-faint); }
+nav.versions .v-range { font-family: var(--font-num); font-size: 14px; }
+nav.versions .v-latest { font-size: 11px; color: var(--accent); }
+main { padding: 32px clamp(18px, 4vw, 48px) 64px; max-width: 920px; display: grid; gap: 36px; }
+header.head { display: grid; gap: 6px; }
+.eyebrow { font-size: 12px; letter-spacing: .06em; color: var(--ink-faint); }
+h1 { font-family: var(--font-display); font-size: clamp(22px, 3vw, 28px); line-height: 1.4; margin: 0; text-wrap: balance; }
+.summary { margin: 4px 0 0; padding: 0; list-style: none; display: grid; gap: 2px; color: var(--ink-soft); max-width: 65ch; }
+.summary li::before { content: "・"; color: var(--ink-faint); }
+section h2 { font-size: 13px; letter-spacing: .06em; color: var(--ink-faint); font-weight: 500; margin: 0 0 12px; }
+.meters { display: grid; gap: 22px; }
+.meter { display: grid; gap: 8px; }
+.meter-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.meter-name { font-weight: 600; }
+.meter-value { font-size: 22px; }
+.meter-value small { font-size: 13px; color: var(--ink-faint); margin-left: 6px; font-family: var(--font-body); }
+.bar { position: relative; height: 14px; background: var(--track); border-radius: 3px; overflow: hidden; }
+.bar .buffer { position: absolute; top: 0; bottom: 0; right: 0; background: repeating-linear-gradient(135deg, var(--buffer-soft) 0 6px, transparent 6px 11px); border-left: 2px solid var(--buffer); }
+.bar .fill { position: absolute; top: 0; bottom: 0; left: 0; background: var(--accent); }
+.bar .fill.over { background: var(--over); }
+.bar .fill.user { background: var(--user); }
+.bar .start { position: absolute; top: 0; bottom: 0; left: 0; background: var(--ink-faint); opacity: .35; }
+.bar .ceiling { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); }
+.scale { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-faint); font-family: var(--font-num); }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--ink-soft); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 10px; border-radius: 2px; display: inline-block; }
+.projects { display: grid; gap: 0; border-top: 1px solid var(--line); }
+.proj { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 20px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.proj-name { font-weight: 600; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.proj-session { font-size: 12px; color: var(--ink-faint); font-weight: 400; }
+.chip { font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid currentColor; line-height: 1.6; font-weight: 500; }
+.chip.progress { color: var(--accent); }
+.chip.waiting { color: var(--buffer); }
+.chip.idle { color: var(--ink-faint); }
+.chip.stopped { color: var(--over); }
+.proj-did { grid-column: 1 / -1; margin: 0; padding: 0; list-style: none; color: var(--ink-soft); max-width: 70ch; }
+.proj-did li::before { content: "・"; color: var(--ink-faint); }
+.est { text-align: right; font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+.est .num { font-size: 15px; color: var(--ink); }
+.est .gap-up { color: var(--over); }
+.est .gap-down { color: var(--ok); }
+.proj-links { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; }
+.proj-links a { color: var(--accent); }
+.proj-links code { font-family: var(--font-num); font-size: 12px; color: var(--ink-faint); }
+.needs { display: grid; gap: 8px; }
+.need { background: var(--buffer-soft); border-radius: 6px; padding: 10px 14px; display: grid; gap: 2px; }
+.need b { font-weight: 600; }
+.need a { color: var(--ink); }
+.meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px 32px; }
+.meta h3 { font-size: 14px; margin: 0 0 6px; }
+.meta ul { margin: 0; padding: 0; list-style: none; color: var(--ink-soft); display: grid; gap: 4px; }
+.meta ul li::before { content: "・"; color: var(--ink-faint); }
+.empty { color: var(--ink-faint); }
+.check { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px 28px; }
+.check-item { display: grid; gap: 2px; align-content: start; }
+.check-label { font-size: 13px; color: var(--ink-soft); }
+.check-value { font-size: 22px; }
+.check-note { font-size: 12px; color: var(--ink-faint); }
+.check-foot { margin: 12px 0 0; font-size: 12px; color: var(--ink-faint); }
+.nav-decisions { margin: 0 0 18px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.nav-decisions button { font-weight: 600; }
+.dec-group { display: grid; gap: 0; border-top: 1px solid var(--line); }
+.dec-group + h2 { margin-top: 28px; }
+details.dec { border-bottom: 1px solid var(--line); }
+details.dec summary { list-style: none; cursor: pointer; padding: 12px 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; }
+details.dec summary::-webkit-details-marker { display: none; }
+details.dec summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dec-title { font-weight: 600; }
+.dec-title::before { content: "▸ "; color: var(--ink-faint); }
+details.dec[open] .dec-title::before { content: "▾ "; }
+.dec-where { font-size: 12px; color: var(--ink-faint); grid-column: 1; }
+.dec-conf { grid-row: 1 / span 2; grid-column: 2; align-self: center; display: flex; gap: 6px; }
+.chip.conf-高 { color: var(--ok); }
+.chip.conf-中 { color: var(--accent); }
+.chip.conf-低 { color: var(--buffer); }
+.chip.graded { color: var(--ink); }
+.dec-body { margin: 0 0 14px; display: grid; grid-template-columns: 9em minmax(0, 1fr); gap: 6px 16px; font-size: 14px; }
+.dec-body dt { color: var(--ink-faint); }
+.dec-body dd { margin: 0; white-space: pre-wrap; max-width: 65ch; }
+.dec-body dd.grade { font-weight: 600; }
+@media (max-width: 760px) { .dec-body { grid-template-columns: 1fr; gap: 2px; } .dec-body dd { margin-bottom: 6px; } }
+.foot { font-size: 12px; color: var(--ink-faint); border-top: 1px solid var(--line); padding-top: 14px; }
+@media (max-width: 760px) {
+  .shell { grid-template-columns: 1fr; min-height: 0; }
+  nav.versions { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--line); padding: 14px; }
+  nav.versions ol { grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; }
+  main { padding-top: 22px; }
+}
+</style>
+
+<div class="shell">
+  <nav class="versions" aria-label="報告と判断ログ">
+    <div class="nav-decisions">
+      <button type="button" id="decisionsBtn" data-id="decisions">
+        <span class="v-range">判断ログ</span>
+        <span class="v-date" id="decisionsCount"></span>
+      </button>
+    </div>
+    <h2>5時間枠ごとの報告</h2>
+    <ol id="versionList"></ol>
+  </nav>
+  <main id="report" aria-live="polite"></main>
+</div>
+
+<script id="reports-data" type="application/json">/*REPORTS_JSON*/</script>
+<script id="decisions-data" type="application/json">/*DECISIONS_JSON*/</script>
+<script>
+(function () {
+  const reports = JSON.parse(document.getElementById("reports-data").textContent);
+  const decisions = JSON.parse(document.getElementById("decisions-data").textContent);
+  const decisionsBtn = document.getElementById("decisionsBtn");
+  const list = document.getElementById("versionList");
+  const main = document.getElementById("report");
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const hm = (iso) => { const d = new Date(iso); return d.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" }); };
+  const md = (iso) => { const d = new Date(iso); return d.toLocaleDateString("ja-JP", { month: "numeric", day: "numeric", weekday: "short" }); };
+  const pct = (v) => (v === null || v === undefined ? "—" : `${Math.round(v * 10) / 10}%`);
+  const STATE = { "進行": "progress", "評価待ち": "waiting", "待機": "idle", "停止": "stopped" };
+
+  function meter(name, used, opts) {
+    const buffer = Math.max(0, Math.min(100, opts.buffer || 0));
+    const ceiling = opts.ceiling;
+    const over = used > 100 - buffer;
+    const start = opts.start;
+    return `
+      <div class="meter">
+        <div class="meter-top">
+          <span class="meter-name">${esc(name)}</span>
+          <span class="meter-value num">${pct(used)}<small>${esc(opts.note || "")}</small></span>
+        </div>
+        <div class="bar" role="img" aria-label="${esc(name)} ${pct(used)}${opts.split ? `（本人 ${pct(opts.split.user)}、自律実行 ${pct(opts.split.autopilot)}）` : ""}">
+          <div class="buffer" style="width:${buffer}%"></div>
+          ${opts.split
+            ? `<div class="fill user" style="width:${Math.min(100, opts.split.user)}%"></div>
+               <div class="fill${over ? " over" : ""}" style="left:${Math.min(100, opts.split.user)}%;width:${Math.max(0, Math.min(100 - opts.split.user, opts.split.autopilot))}%"></div>`
+            : `<div class="fill${over ? " over" : ""}" style="width:${Math.min(100, used)}%"></div>`}
+          ${start !== undefined ? `<div class="start" style="width:${Math.min(100, start)}%"></div>` : ""}
+          ${ceiling !== undefined ? `<div class="ceiling" style="left:calc(${Math.min(100, ceiling)}% - 1px)"></div>` : ""}
+        </div>
+        <div class="scale"><span>0</span><span>50</span><span>100%</span></div>
+      </div>`;
+  }
+
+  function render(r) {
+    const u = r.usage || {};
+    const a = r.autopilot || {};
+    const projects = r.projects || [];
+    const needs = r.needs_user || [];
+    main.innerHTML = `
+      <header class="head">
+        <div class="eyebrow num">${md(r.window_start)} ${hm(r.window_start)}–${hm(r.window_end)} の5時間枠</div>
+        <h1>${esc(r.headline)}</h1>
+        <ul class="summary">${(r.summary || []).map((s) => `<li>${esc(s)}</li>`).join("")}</ul>
+      </header>
+
+      <section>
+        <h2>使用率</h2>
+        <div class="meters">
+          ${meter("5時間枠（この枠の終わり時点）", u.five_hour_used, { buffer: u.five_hour_buffer, ceiling: u.five_hour_ceiling,
+              split: u.user_pct != null && u.autopilot_pct != null ? { user: u.user_pct, autopilot: u.autopilot_pct } : null,
+              note: u.user_pct != null ? `本人 ${pct(u.user_pct)} ・ 自律実行 ${pct(u.autopilot_pct)} ・ 自律実行の上限 ${pct(u.five_hour_ceiling)}` : `自律実行の上限 ${pct(u.five_hour_ceiling)}` })}
+          ${meter("7日枠", u.seven_day_end, { buffer: u.seven_day_buffer, start: u.seven_day_start, note: `この枠で ${pct(u.seven_day_start)} → ${pct(u.seven_day_end)}（${esc(u.seven_day_resets || "")} リセット）` })}
+          <div class="legend">
+            ${u.user_pct != null ? `<span><i class="sw" style="background:var(--user)"></i>本人の使用（推定）</span><span><i class="sw" style="background:var(--accent)"></i>自律実行の使用（推定）</span>` : `<span><i class="sw" style="background:var(--accent)"></i>使った量</span>`}
+            <span><i class="sw" style="background:var(--ink)"></i>自律実行の上限</span>
+            <span><i class="sw" style="background:repeating-linear-gradient(135deg,var(--buffer-soft) 0 3px,var(--buffer) 3px 4px)"></i>本人用の余力</span>
+          </div>
+        </div>
+      </section>
+
+      ${u.buffer_check ? `
+      <section>
+        <h2>本人用の余力の検証</h2>
+        <div class="check">
+          <div class="check-item"><span class="check-label">仮置きの規則で残した量</span><span class="check-value num">${pct(u.buffer_check.provisional_pct)}</span></div>
+          <div class="check-item"><span class="check-label">予測していたら残した量</span><span class="check-value num">${pct(u.buffer_check.forecast_pct)}</span><span class="check-note">過去の同じ種類の日 ${esc(u.buffer_check.forecast_basis_days)} 日分の、同じ時間帯の上位25%</span></div>
+          <div class="check-item"><span class="check-label">実際に本人が使った量</span><span class="check-value num">${pct(u.buffer_check.user_pct)}</span><span class="check-note">claude.ai のチャットなど会話記録に無い利用を含む</span></div>
+        </div>
+        <p class="check-foot">予測に基づく配分へ切り替えるのは、予測と実際のずれが仮置きの規則より小さくなってから。</p>
+      </section>` : ""}
+
+      ${needs.length ? `
+      <section>
+        <h2>見てほしいもの</h2>
+        <div class="needs">${needs.map((n) => `
+          <div class="need"><b>${esc(n.folder)}</b><span>${n.link ? `<a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.what)}</a>` : esc(n.what)}</span></div>`).join("")}
+        </div>
+      </section>` : ""}
+
+      <section>
+        <h2>案件ごと</h2>
+        <div class="projects">${projects.length ? projects.map((p) => {
+          const gap = p.actual_pct != null && p.estimate_pct != null ? p.actual_pct - p.estimate_pct : null;
+          const gapText = gap === null ? "" : `<span class="${gap > 0 ? "gap-up" : "gap-down"}">（${gap > 0 ? "+" : ""}${Math.round(gap * 10) / 10}）</span>`;
+          return `
+          <article class="proj">
+            <div class="proj-name">${esc(p.folder)} <span class="chip ${STATE[p.state] || "idle"}">${esc(p.state || "待機")}</span><span class="proj-session">${esc(p.title || "")}</span></div>
+            <div class="est">見積もり <span class="num">${pct(p.estimate_pct)}</span> → 実績 <span class="num">${pct(p.actual_pct)}</span>${gapText}</div>
+            <ul class="proj-did">${(p.did || []).map((d) => `<li>${esc(d)}</li>`).join("") || `<li class="empty">この枠では動いていない</li>`}</ul>
+            <div class="proj-links">
+              ${(p.artifacts || []).map((x) => `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.label)}</a>`).join("")}
+              ${(p.commits || []).map((c) => `<code>${esc(c)}</code>`).join("")}
+              ${p.decisions_added ? `<span>判断ログ +${p.decisions_added}件（採点待ち）</span>` : ""}
+            </div>
+          </article>`;
+        }).join("") : `<p class="empty">この枠で動いた案件はない</p>`}</div>
+      </section>
+
+      <section>
+        <h2>自律実行の振り返り</h2>
+        <div class="meta">
+          <div><h3>止めたこと</h3><ul>${(a.stops || []).map((s) => `<li>${esc(s)}</li>`).join("") || `<li class="empty">なし</li>`}</ul></div>
+          <div><h3>見積もりのずれ</h3><ul>${(a.estimate_notes || []).map((s) => `<li>${esc(s)}</li>`).join("") || `<li class="empty">記録なし</li>`}</ul></div>
+          <div><h3>キャッシュが切れた状態からの再開</h3><ul>${a.resumes && a.resumes.count
+            ? `<li><span class="num">${esc(a.resumes.count)}</span> 回で5時間枠の <span class="num">${pct(a.resumes.pct)}</span>（推定）</li>` + Object.entries(a.resumes.by_folder || {}).map(([f, v]) => `<li>${esc(f)}: ${esc(v.count)} 回・<span class="num">${pct(v.pct)}</span></li>`).join("")
+            : `<li class="empty">なし</li>`}</ul></div>
+          <div><h3>動く時間と本人の使用</h3><ul>${a.rhythm
+            ? `<li>${a.rhythm.mode === "run" ? "動く時間" : "休む時間"}（本人が空いていると申告した時間が <span class="num">${Math.round(a.rhythm.declared_free_share * 100)}%</span>）</li>`
+              + `<li>本人が使いそうだと見た量 <span class="num">${pct(a.rhythm.user_pct_expected)}</span> → 実際 <span class="num">${pct(u.user_pct)}</span></li>`
+            : `<li class="empty">記録なし</li>`}</ul></div>
+          <div><h3>指揮役自身の消費</h3><ul><li>5時間枠の <span class="num">${pct(a.orchestrator_pct)}</span></li></ul></div>
+          <div><h3>気づき・問題</h3><ul>${(a.issues || []).map((s) => `<li>${esc(s)}</li>`).join("") || `<li class="empty">なし</li>`}</ul></div>
+        </div>
+      </section>
+
+      <p class="foot">書いた時刻 <span class="num">${md(r.written_at)} ${hm(r.written_at)}</span>。実績は会話記録のトークン量から推定した値で、claude.ai のチャットなど他の利用も含まれうる。</p>`;
+    list.querySelectorAll("button").forEach((b) => b.setAttribute("aria-current", String(b.dataset.id === r.id)));
+  }
+
+  const FIELD_ORDER = ["案件", "場面", "聞きたかったこと", "想定した答え", "根拠", "確信度", "取り消し方", "本人の採点"];
+
+  function decisionItem(d) {
+    const f = d.fields || {};
+    const keys = FIELD_ORDER.filter((k) => f[k]).concat(Object.keys(f).filter((k) => !FIELD_ORDER.includes(k)));
+    const conf = (f["確信度"] || "").trim().charAt(0);
+    return `
+      <details class="dec">
+        <summary>
+          <span class="dec-title">${esc(d.title)}</span>
+          <span class="dec-conf">${conf ? `<span class="chip conf-${esc(conf)}">確信度 ${esc(conf)}</span>` : ""}${d.graded ? `<span class="chip graded">${esc((f["本人の採点"] || "").trim().charAt(0))}</span>` : ""}</span>
+          <span class="dec-where">${esc(d.folder)} ・ ${esc(d.date)}</span>
+        </summary>
+        <dl class="dec-body">${keys.map((k) => `<dt>${esc(k)}</dt><dd${k === "本人の採点" ? ' class="grade"' : ""}>${esc(f[k])}</dd>`).join("")}</dl>
+      </details>`;
+  }
+
+  function renderDecisions() {
+    const pending = decisions.filter((d) => !d.graded);
+    const graded = decisions.filter((d) => d.graded);
+    main.innerHTML = `
+      <header class="head">
+        <div class="eyebrow">本人に聞かずに決めたこと</div>
+        <h1>判断ログ</h1>
+        <ul class="summary">
+          <li>未採点 <span class="num">${pending.length}</span> 件、採点済み <span class="num">${graded.length}</span> 件。新しい順</li>
+          <li>採点は、各判断ログのファイルの「本人の採点」を ○ / △ / × に書き換えるか、チャットで伝える</li>
+        </ul>
+      </header>
+      <section>
+        <h2>未採点</h2>
+        <div class="dec-group">${pending.map(decisionItem).join("") || `<p class="empty">なし</p>`}</div>
+        <h2>採点済み</h2>
+        <div class="dec-group">${graded.map(decisionItem).join("") || `<p class="empty">なし</p>`}</div>
+      </section>`;
+    list.querySelectorAll("button").forEach((b) => b.setAttribute("aria-current", "false"));
+    decisionsBtn.setAttribute("aria-current", "true");
+  }
+
+  function select(id, push) {
+    if (id === "decisions") {
+      renderDecisions();
+      if (push) history.replaceState(null, "", "#decisions");
+      return;
+    }
+    decisionsBtn.setAttribute("aria-current", "false");
+    const r = reports.find((x) => x.id === id) || reports[0];
+    if (!r) { main.innerHTML = `<p class="empty">まだ報告はない</p>`; return; }
+    render(r);
+    if (push) history.replaceState(null, "", `#${r.id}`);
+  }
+
+  const pendingCount = decisions.filter((d) => !d.graded).length;
+  document.getElementById("decisionsCount").textContent = `未採点 ${pendingCount} 件 / 全 ${decisions.length} 件`;
+  decisionsBtn.addEventListener("click", () => select("decisions", true));
+
+  list.innerHTML = reports.map((r, i) => `
+    <li><button type="button" data-id="${esc(r.id)}">
+      <span class="v-date">${md(r.window_start)}${i === 0 ? ` <span class="v-latest">最新</span>` : ""}</span>
+      <span class="v-range">${hm(r.window_start)}–${hm(r.window_end)}</span>
+    </button></li>`).join("");
+  list.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) select(b.dataset.id, true); });
+  select(decodeURIComponent(location.hash.slice(1)), false);
+})();
+</script>
