@@ -17,6 +17,19 @@ SCAN_INTERVAL_MIN = 30   # 使用率スキャンの定期タスクの間隔
 SCAN_STALE_MIN = 45      # これより古ければ、スキャンが止まっている疑いがある
 
 
+def login_health():
+    """claude.ai のログインが切れたままなら、その1行を返す（tools/login_flag.py が置く印）。"""
+    try:
+        since = json.loads((ROOT / "data" / "login_state.json").read_text(encoding="utf-8")).get("expired_since")
+    except (OSError, json.JSONDecodeError, AttributeError):
+        return None
+    if not since:
+        return None
+    at = datetime.fromisoformat(since).astimezone()
+    return (f"⚠ **claude.ai のログインが切れたまま**（{at:%m/%d %H:%M} から）。"
+            "ブラウザペインにログイン画面を開いてある。ログインし直せば、次の回から使用率の記録が戻る")
+
+
 def scan_health(age_min):
     """最後の使用率の記録からの経過で、使用率スキャンが動いているかを1行で示す。"""
     if age_min <= SCAN_STALE_MIN:
@@ -48,6 +61,7 @@ def main():
         f"判定: **{LABEL[b['state']]}** — {b['reason']}",
         "",
         scan_health(b["snapshot_age_min"]),
+        *(["", login_health()] if login_health() else []),
         "",
         "## 案件",
         "",

@@ -29,7 +29,7 @@ usage-autopilot のセッションは、この指揮役1つだけ（2026-09-15 �
 ## 1. 材料を集める
 
 1. **使用率スキャンが止まっていないか**: `mcp__scheduled-tasks__list_task_runs`（`usage-scan`、limit 3）で、`running` のまま始まってから20分を超えた回があれば、その `session_id` を `mcp__ccd_session_mgmt__stop_session` で止め、`log_round.py` に `skip`（理由: スキャンの回が実行中のまま残っていた）として記録する。実行中の回が残っていると、次の回が始まらない
-2. **使用率**: `python tools/budget.py --json`。`state` が `stale`（使用率スキャンの記録が30分より古い）なら、ブラウザペインで `https://claude.ai` を開き `tools/fetch_usage.js` を `javascript_tool` で実行、結果を `data/usage_latest.json` に保存して `python tools/record_usage.py < data/usage_latest.json`、もう一度 `budget.py --json`。ログイン画面が出たら PushNotification で「claude.ai のログインが切れている」と知らせ、手順6へ
+2. **使用率**: `python tools/budget.py --json`。`state` が `stale`（使用率スキャンの記録が30分より古い）なら、ブラウザペインで `https://claude.ai` を開き `tools/fetch_usage.js` を `javascript_tool` で実行、結果を `data/usage_latest.json` に保存して `python tools/record_usage.py < data/usage_latest.json`、もう一度 `budget.py --json`。ログイン画面が出たら、そのタブを閉じずに `https://claude.ai/login` を開いて前に出し（本人がすぐログインできるように。`prompts/usage-scan.md` の「ログインが要るとき」と同じ）、PushNotification とこのチャットで「claude.ai のログインが切れています。ブラウザペインにログイン画面を開いてあるので、ログインしてください」と知らせる。**PushNotification は届かないことがあるので、`log_round.py` に `skip`（理由: claude.ai のログインが切れている）として記録してから**手順6へ（記録に残らないと、切れていた時間が報告書に出ない）
 3. **対象**: `mcp__ccd_session_mgmt__list_sessions`（limit 50）の結果を `data/sessions.json` に保存し、`python tools/targets.py data/sessions.json`
 4. **参考案**: `python tools/allocate.py`（記録はしない。機械的な案にすぎない）
 5. **各案件の状況**: 対象フォルダごとに `.autopilot/plan.json` と `.autopilot/report.md` の先頭数件
@@ -96,11 +96,11 @@ usage-autopilot のセッションは、この指揮役1つだけ（2026-09-15 �
 
 `ScheduleWakeup` で予約する。`prompt` はこの回と同じ文をそのまま渡す。
 
-指揮役自身の会話も、60分以上あけて起きるとキャッシュが切れて重い（60万トークンで1回約13%）。**どの状況でも3300秒（55分）を超えない。**起きても何もすることがない回は、このチャットに1行だけ書いてすぐ眠る（読み込みだけならほぼ枠を使わない）。
+指揮役自身の会話も、キャッシュが切れてから起きると重い（会話10万トークンあたり約2.24%。切れる前に続けた1往復は中央値0.2%）。キャッシュの有効期限は60分なので、**どの状況でも2700秒（45分）を超えない。**55分では余裕が5分しかなく、少しのずれで切れた側に落ちる（2026-09-16 の実測: 何も頼まなかった枠の25%が、この切れた見回りだった。判断ログ D-015）。起きても何もすることがない回は、このチャットに1行だけ書いてすぐ眠る。
 
 | 状況 | 次の起動まで |
 |---|---|
 | `wrap` を送った／`hard` | 600秒 |
 | 動く時間で、作業中のセッションがある、または今回 `work`・`plan` を送った | 1200秒 |
-| 休む時間で、次に動く時間が55分以内に始まる | 次に動く時間の開始までの秒数（最低60） |
-| それ以外（休む時間、この枠の予算を使い切った `wait` など） | 3300秒 |
+| 休む時間で、次に動く時間が45分以内に始まる | 次に動く時間の開始までの秒数（最低60） |
+| それ以外（休む時間、この枠の予算を使い切った `wait` など） | 2700秒 |
